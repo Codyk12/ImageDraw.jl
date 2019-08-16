@@ -10,6 +10,7 @@ include("circle2d.jl")
 include("paths.jl")
 include("cross.jl")
 include("background.jl")
+include("imagemap.jl")
 
 #export methods
 export
@@ -53,6 +54,10 @@ export
 	RegularPolygon,
 
 	#Cross
-	Cross
+	Cross,
+
+	# Map of image
+	ImageMap
+
 
 end # module

@@ -168,6 +168,17 @@ struct Cross <: AbstractPath
 end
 
 """
+    img_map = ImageMap(img, x, y)
+
+Overlays an image on an larger image. (x, y) is the center for placing the image
+"""
+struct ImageMap <: Drawable
+    image
+    x
+    y
+end
+
+"""
     img = draw!(img, drawable, color)
     img = draw!(img, drawable)
 
