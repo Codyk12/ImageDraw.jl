@@ -49,6 +49,9 @@ struct StripedBackground{T<:Colorant,  U<:Real, V<:Real} <: AbstractBackground
 end
 
 
+struct NoisyBackground <: AbstractBackground end
+
+
 """
     line = LineTwoPoints(p1, p2)
 

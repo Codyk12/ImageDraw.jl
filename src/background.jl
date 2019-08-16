@@ -9,13 +9,27 @@
 """
 generatecanvas(colortype::Type, x::Int, y::Int) = zeros(colortype, (x,y))
 
+generatecanvas(colortype::Type, x::Int, y::Int, b::NoisyBackground) = rand(colortype, (x,y))
+
 generatecanvas(colortype::Type, size::NTuple{2, Int}) = zeros(colortype, size)
+
+generatecanvas(colortype::Type, size::NTuple{2, Int}, b::NoisyBackground) = rand(colortype, size)
 
 generatecanvas(colortype::Type, x::Int, y::Int, b::AbstractBackground) =
     generatecanvas(colortype, (x,y), b)
 
 function generatecanvas(colortype::Type, size::NTuple{2, Int}, b::AbstractBackground)
     draw!(zeros(colortype, (size...)), b)
+end
+
+
+"""
+    new_img = draw!(img, solid_background)
+
+    Paints the entire given image a solid color
+"""
+function draw!(img::AbstractArray{T,2}, b::NoisyBackground) where {T<:Colorant}
+    rand(T, ())
 end
 
 
@@ -34,6 +48,7 @@ function draw!(img::AbstractArray{T,2}, b::SolidBackground) where {T<:Colorant}
     end
     img
 end
+
 
 """
     new_img = draw!(img, striped_background)
