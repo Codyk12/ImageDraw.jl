@@ -5,7 +5,7 @@ Places an smaller image on the given image, only places pixels with in the image
 
 ImageDraw.draw!(img::AbstractArray{T,2}, map::ImageMap) where {T<: Colorant} = draw!(img::AbstractArray{T,2}, map::ImageMap, oneunit(T))
 
-function ImageDraw.draw!(img::AbstractArray{T,2}, map::ImageMap, color::T, mask::Bool=false) where {T<:Colorant}
+function ImageDraw.draw!(img::AbstractArray{T,2}, map::ImageMap, color::R, mask::Bool=false) where {R,T<:Colorant}
     size(img) < size(map.image) && error("ImageMap must have a smaller image than the canvas image.")
     s = size(map.image)
     n = size(img)[1]
