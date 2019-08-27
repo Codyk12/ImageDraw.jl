@@ -9,7 +9,6 @@ include("ellipse2d.jl")
 include("circle2d.jl")
 include("paths.jl")
 include("cross.jl")
-include("background.jl")
 include("imagemap.jl")
 
 if v"1.0" <= VERSION < v"1.1"
