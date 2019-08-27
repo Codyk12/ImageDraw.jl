@@ -182,36 +182,43 @@ struct ImageMap <: Drawable
 end
 
 """
-    img = draw!(img, drawable, color)
-    img = draw!(img, drawable)
+    img = draw!(img, drawable; in_bounds, thickness)
 
 Draws `drawable` on `img` using color `color` which
 defaults to `oneunit(eltype(img))`
 """
-draw!(img::AbstractArray{T,2}, object::Drawable) where {T<:Colorant} = draw!(img, object, oneunit(T))
+draw!(img::AbstractArray{T,2}, object::Drawable; in_bounds::Bool=false, thickness::Union{Integer, Nothing}=nothing) where {T<:Colorant} =
+    draw!(img, object, oneunit(T), in_bounds=in_bounds, thickness=thickness)
 
 
 """
-    img = draw!(img, [drawable], [color])
-    img = draw!(img, [drawable] ,color)
-    img = draw!(img, [drawable])
+    img = draw!(img, [drawable] ,color; in_bounds, thickness)
 
 Draws all objects in `[drawable]` in the given order on `img` using
-corresponding colors from `[color]` which defaults to `oneunit(eltype(img))`
-If only a single color `color` is specified then all objects will be
-colored with that color.
+corresponding colors from `color` which defaults to `oneunit(eltype(img))`.
+color, in_bounds and thickness flags are expanded to length of objects.
 """
-function draw!(img::AbstractArray{T,2}, objects::AbstractVector{U}, colors::AbstractVector{V}) where {T<:Colorant, U<:Drawable, V<:Colorant}
-    colors = copy(colors)
-    while length(colors) < length(objects)
-        push!(colors, oneunit(T))
-    end
-    foreach((object, color) -> draw!(img, object, color), objects, colors)
+function draw!(img::AbstractArray{T, 2}, objects::AbstractVector{U}, color::T = oneunit(T); in_bounds::Bool=false, thickness::Union{Integer, Nothing}=nothing) where {T<:Colorant, U<:Drawable}
+    draw!(img, objects, repeat([color], length(objects));
+          in_bounds = repeat([in_bounds], length(objects)),
+          thickness = repeat([thickness], length(objects)))
+end
+
+
+"""
+    draw!(img, [drawable], [colors]; [bool], [Union{Integer,Nothing}])
+
+Draws objects with given colors, in_bounds flags, and thickness flags.
+Length of objects, colors, in_bounds flags, thickness flags, all need to be of equal length
+"""
+function draw!(img::AbstractArray{T,2}, objects::AbstractVector{U}, colors::AbstractVector{V}; in_bounds::AbstractVector{Bool}=zeros(Bool, length(objects)), thickness::AbstractVector{<:Union{Integer, Nothing}}=Vector{Nothing}(undef, length(objects))) where {T<:Colorant, U<:Drawable, V<:Colorant}
+    length(colors) == length(objects) || throw("The number of colors and objects should be equal.")
+    length(in_bounds) == length(objects) || throw("The number of in_bounds vars and objects should be equal")
+    length(thickness) == length(objects) || throw("The number of thicknesses and objects should be equal")
+    foreach((object, color, in_b, thick) -> draw!(img, object, color, in_bounds=in_b, thickness=thick), objects, colors, in_bounds, thickness)
     img
 end
 
-draw!(img::AbstractArray{T,2}, objects::AbstractVector{U}, color::T = oneunit(T)) where {T<:Colorant, U<:Drawable} =
-    draw!(img, objects, [color for i in 1:length(objects)])
 
 """
     img_new = draw(img, drawable, color)
@@ -221,19 +228,28 @@ Draws the `drawable` object on a copy of image `img` using color
 `color`. Can also draw multiple `Drawable` objects when passed
 as a `AbstractVector{Drawable}` with corresponding colors in `[color]`
 """
-draw(img::AbstractArray{T,2}, args...) where {T<:Colorant} = draw!(copy(img), args...)
+draw(img::AbstractArray{T,2}, args...; in_bounds::Bool=false, thickness::Union{Integer, Nothing}=nothing) where {T<:Colorant} =
+    draw!(copy(img), args...; in_bounds=in_bounds, thickness=thickness)
 
 Point(τ::Tuple{Int, Int}) = Point(τ...)
 Point(p::CartesianIndex) = Point(p[2], p[1])
 
-function draw!(img::AbstractArray{T,2}, point::Point, color::T) where T<:Colorant
-    drawifinbounds!(img, point, color)
+
+draw!(img::AbstractArray{T,2}, p::Point, color::T = oneunit(T); in_bounds::Bool=false, thickness::Union{Integer, Nothing}=nothing) where {T<:Colorant} =
+    draw!(img, p.y, p.x, color, in_bounds=in_bounds, thickness=thickness)
+draw!(img::AbstractArray{T,2}, p::CartesianIndex{2}, color::T = oneunit(T); in_bounds::Bool=false, thickness::Union{Integer, Nothing}=nothing) where {T<:Colorant} =
+    draw!(img, Point(p), color, in_bounds=in_bounds, thickness=thickness)
+
+function draw!(img::AbstractArray{T,2}, y::Integer, x::Integer, color::T; in_bounds::Bool=false, thickness::Union{Integer, Nothing}=nothing) where T<:Colorant
+    in_bounds ? img[point.y, point.x] = color : drawifinbounds!(img, y, x, color)
+    (isnothing(thickness) && thickness != 1) || drawwiththickness!(img, y, x, color, in_bounds, thickness)
+    img
 end
 
 """
-    img_new = drawifinbounds!(img, y, x, color)
-    img_new = drawifinbounds!(img, point, color)
-    img_new = drawifinbounds!(img, cartesianIndex, color)
+    img_new = drawifinbounds!(img, y, x, color; in_bounds, thickness)
+    img_new = drawifinbounds!(img, point, color; in_bounds, thickness)
+    img_new = drawifinbounds!(img, cartesianIndex, color; in_bounds, thickness)
 
 Draws a single point after checkbounds() for coordinate in the image.
 Color Defaults to oneunit(T)
@@ -244,14 +260,14 @@ drawifinbounds!(img::AbstractArray{T,2}, p::Point, color::T = oneunit(T)) where 
 drawifinbounds!(img::AbstractArray{T,2}, p::CartesianIndex{2}, color::T = oneunit(T)) where {T<:Colorant} = drawifinbounds!(img, Point(p), color)
 
 function drawifinbounds!(img::AbstractArray{T,2}, y::Int, x::Int, color::T) where {T<:Colorant}
-    if checkbounds(Bool, img, y, x) img[y, x] = color end
+    checkbounds(Bool, img, y, x) && (img[y, x] = color)
     img
 end
 
 """
-    img_new = drawwiththickness!(img, y, x, color, thickness)
-    img_new = drawwiththickness!(img, point, color, thickness)
-    img_new = drawwiththickness!(img, cartesianIndex, color, thickness)
+    img_new = drawwiththickness!(img, y, x, color; in_bounds, thickness)
+    img_new = drawwiththickness!(img, point, color; in_bounds, thickness)
+    img_new = drawwiththickness!(img, cartesianIndex, color; in_bounds, thickness)
 
 Draws pixel with given thickness
 Color Defaults to oneunit(T)
@@ -259,20 +275,17 @@ Thickness defaults to 1
 
 """
 
-drawwiththickness!(img::AbstractArray{T,2}, p::Point, color::T = oneunit(T), thickness::Int=1) where {T<:Colorant} = drawwiththickness!(img, p.y, p.x, color, thickness)
-drawwiththickness!(img::AbstractArray{T,2}, p::CartesianIndex{2}, color::T = oneunit(T), thickness::Int=1) where {T<:Colorant} = drawifinbounds!(img, Point(p), color, thickness)
+drawwiththickness!(img::AbstractArray{T,2}, p::Point, color::T, in_bounds::Bool, thickness::Integer) where {T<:Colorant} = drawwiththickness!(img, p.y, p.x, color, in_bounds, thickness)
+drawwiththickness!(img::AbstractArray{T,2}, p::CartesianIndex{2}, color::T, in_bounds::Bool, thickness::Integer) where {T<:Colorant} = drawifinbounds!(img, Point(p), color, in_bounds, thickness)
 
-function drawwiththickness!(img::AbstractArray{T,2}, y0::Int, x0::Int, color::T, thickness::Int) where {T<:Colorant}
-    n = Int(round(thickness / 2))
-    evn = thickness % 2 == 1 ? 0 : 1
-    pixels = [i for i = -(n-evn):n]
+function drawwiththickness!(img::AbstractArray{T,2}, y0::Int, x0::Int, color::T, in_bounds::Bool, thickness::Int) where {T<:Colorant}
+    m = ceil(Int, thickness/2) - 1
+    n = thickness % 2 == 0 ? m+1 : m
+    pixels = [i for i = -m:n]
 
-    for (x,y) in Combinatorics.combinations(pixels, 2)
-        drawifinbounds!(img, y0+y, x0+x, color)
-        drawifinbounds!(img, y0+y, x0-x, color)
-        drawifinbounds!(img, y0-y, x0+x, color)
-        drawifinbounds!(img, y0-y, x0-x, color)
+    for x in pixels, y in pixels
+        draw!(img, y0+y, x0+x, color, in_bounds=in_bounds)
     end
-    drawifinbounds!(img, y0, x0, color)
+    draw!(img, y0, x0, color, in_bounds=in_bounds)
     img
 end

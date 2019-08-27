@@ -12,6 +12,10 @@ include("cross.jl")
 include("background.jl")
 include("imagemap.jl")
 
+if v"1.0" <= VERSION < v"1.1"
+    isnothing(x) = x===nothing
+end
+
 #export methods
 export
 	draw,
