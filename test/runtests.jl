@@ -9,8 +9,7 @@ tests = [
     "ellipse2d.jl",
     "circle2d.jl",
     "paths.jl",
-    "cross.jl",
-    "background.jl"
+    "cross.jl"
 ]
 
 for t in tests
