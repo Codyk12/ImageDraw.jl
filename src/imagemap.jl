@@ -1,6 +1,4 @@
-ImageDraw.draw!(img::AbstractArray{T,2}, map::ImageMap) where {T<:Colorant} = draw!(img::AbstractArray{T,2}, map::ImageMap, oneunit(T))
-
-function ImageDraw.draw!(img::AbstractArray{T,2}, map::ImageMap, color::R; mask::Bool=false) where {R,T<:Colorant}
+function ImageDraw.draw!(img::AbstractArray{T,2}, map::ImageMap, color::T=oneunit(T); mask::Bool=false) where {R,T<:Colorant}
     size(img) < size(map.image) && error("ImageMap must have a smaller image than the canvas image.")
     s = size(map.image)
     n, m = size(img)
