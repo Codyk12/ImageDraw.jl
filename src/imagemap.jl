@@ -1,6 +1,4 @@
 function ImageDraw.draw!(img::AbstractArray{T,2}, map::ImageMap, color::T=oneunit(T); mask::Bool=false) where {R,T<:Colorant}
-    size(img) < size(map.image) && error("ImageMap must have a smaller image than the canvas image.")
-
     map_center = (map.x, map.y)
     half_map_size, maybe_extra_pixel = zip(divrem.(size(map.image), 2)...)
     map_offset = CartesianIndex(map_center .- half_map_size)
