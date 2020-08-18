@@ -6,27 +6,18 @@ Places an smaller image on the given image, only places pixels with in the image
 ImageDraw.draw!(img::AbstractArray{T,2}, map::ImageMap) where {T<: Colorant} = draw!(img::AbstractArray{T,2}, map::ImageMap, oneunit(T))
 
 function ImageDraw.draw!(img::AbstractArray{T,2}, map::ImageMap, color::R; mask::Bool=false) where {R,T<:Colorant}
-    size(img) < size(map.image) && error("ImageMap must have a smaller image than the canvas image.")
-    s = size(map.image)
+    size(img) < size(map.image) && error("BitMap must have a smaller image than the canvas image.")
+    n_, m_ = size(map.image)
     n, m = size(img)
-    x = map.x - ceil(Int, s[1]/2)
-    y = map.y - ceil(Int, s[2]/2)
 
-    x_start = max(x, 1)
-    y_start = max(y, 1)
+    x = map.x
+    y = map.y
 
-    x_end = min(x+s[1]-1, n)
-    y_end = min(y+s[2]-1, m)
+    (x <=0 || y <= 0) && error("Position needs to be positive")
+    (x + n_ > n || y + m_ > m) && error("BitMap is not contained within the Image")
 
-    mask ? (img[x_start:x_end,y_start:y_end] .= color; return img) : nothing
+    mask ? (img[x:x+n_,y:y+m_] .= color; return img) : nothing
 
-    m_x_start = x_start == 1 ? x_start - x + 1 : 1
-    m_y_start = y_start == 1 ? y_start - y + 1 : 1
-
-    m_x_end = x_end == n ? x+s[1]-1 - n : 0
-    m_y_end = y_end == m ? y+s[2]-1 - n : 0
-
-    img[x_start:x_end,y_start:y_end] = map.image[m_x_start:end-m_x_end,m_y_start:end-m_y_end]
-
+    img[x:x+n_,y:y+m_] = map.image
     img
 end
